@@ -1,0 +1,90 @@
+---
+title: "HW8"
+author: "Zhuodiao Kuang"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(survival)
+library(flexsurv)
+library(survminer)
+library(survMisc)
+```
+
+# Problem 1
+
+Since $T_i\sim LN(\mu,\sigma^2)$, we have the p.d.f. of the log-normal:
+$$f(t) = \frac{1}{t\sigma\sqrt{2\pi}}\exp{\left(-\frac{(\ln t - \mu)}{2\sigma^2}\right)}$$
+The log-likelihood of the sample $\{t_1,t_2,\ldots,t_n\}$ is:
+
+$$LL = -\frac{n}{2}\ln(2\pi) - \frac{n}{2}\ln\sigma^2-\frac{1}{2\sigma^2}\sum_{i=1}^{n}(\ln t_i - \mu)^2 - \sum_{i=1}^{n}\ln t_i$$
+
+Taking the F.O.C. with respect to $\mu$ and $\sigma$, and set them to zero, we can get:
+$$
+\begin{aligned}
+\frac{\partial LL}{\partial \mu} & = \frac{1}{\sigma^2}\left(\sum_{i=1}^{n}\ln t_i - \mu\right) = 0\\
+\frac{\partial LL}{\partial \sigma^2} & = -\frac{n}{2\sigma^2}+\frac{\sum_{i=1}^{n}(\ln t_i - \mu)^2 }{2\sigma^4} = 0
+\end{aligned}
+$$
+
+We can solve them MLE $\hat\mu, \hat\sigma^2$ from the above equations:
+$$
+\begin{aligned}
+\hat\mu &= \frac{1}{n}\sum_{i=1}^{n}\ln t_i\\
+\hat\sigma^2 &= \frac{1}{n}\sum_{i=1}^{n}(\ln t_i - \hat\mu)^2
+\end{aligned}
+$$
+Therefore, MLEs have closed form.
+
+# Problem 2
+
+```{r}
+ovarianfit_exp <- survreg(Surv(futime, fustat) ~ ecog.ps, data = ovarian, dist = "exponential")
+summary(ovarianfit_exp)
+
+ovarianfit_weib <- survreg(Surv(futime, fustat) ~ ecog.ps, data = ovarian, dist = "weibull")
+summary(ovarianfit_weib)
+
+```
+
+
+Because both tests of two distributions generate relatively high p-values, so the survival data, by ecog status, doesn't follow the exponential distribution or the Weibull distribution.
+
+# Problem 3
+
+The likelihood of Weibull distribution is:
+$$\begin{aligned} 
+L(\beta) & =\prod_{i=1}^n h\left(T_i\mid Z_i\right)^{\Delta_i} S\left(T_i\right) \\ 
+& = \prod_{i=1}^n \left(h_0(T_i)e^{\beta Z_i}\right)^{\Delta_i}e^{-\lambda T_i^\alpha}\\
+& =\prod_{i=1}^n\left(\lambda \alpha T_i^{\alpha-1}e^{\beta Z_i}\right)^{\Delta_i} e^{-\lambda T_i^\alpha}\\
+& = \left(\lambda \alpha \times16^{\alpha-1}e^{\beta}\right)^{1} e^{-\lambda \times 16^\alpha}\times  e^{-\lambda 
+\times 20^\alpha} \\
+&\times \left(\lambda \alpha \times12^{\alpha-1}\right)^{1} e^{-\lambda \times 12^\alpha} \times e^{-\lambda \times 14^\alpha}\\
+& \times \left(\lambda \alpha \times11^{\alpha-1}\right)^{1} e^{-\lambda \times 11^\alpha}\\
+& \times \left(\lambda \alpha \times9^{\alpha-1}e^{\beta}\right)^{1} e^{-\lambda \times 9^\alpha}\\
+& = (\lambda\alpha)^4(16^{\alpha-1}12^{\alpha-1}11^{\alpha-1}9^{\alpha-1})e^{2\beta - \lambda(16^\alpha+20^\alpha+12^\alpha+14^\alpha+11^\alpha+9^\alpha)}\\
+& = (\lambda\alpha)^4 19008^{\alpha-1} e^{2\beta - \lambda(16^\alpha+20^\alpha+12^\alpha+14^\alpha+11^\alpha+9^\alpha)}
+\end{aligned}$$
+
+
+# Problem 4
+
+```{r aft_log_logistic}
+leu_dat = readxl::read_excel("Datasets.xlsx", sheet = "Leukaemia")
+leu_dat$trt = relevel(factor(leu_dat$trt), ref = "Control")
+leuk.aft <- survreg(Surv(time, event == 1) ~ trt, leu_dat,
+                      dist = "loglogistic")
+summary(leuk.aft)
+```
+From the AFT model summary, we can see that the coefficient corresponds to the treatment effect is 
+significant, which means that the treatment 6-MP has a significant effect on the survival of patients with Acute Myelogenous Leukemia.
+
+The corresponding model is:
+$$
+\log T_i = 1.8927 + 1.2655\times I(\text{trt}_i=\text{ 6-MP})
+$$
