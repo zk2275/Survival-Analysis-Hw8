@@ -39,7 +39,7 @@ $$
 \hat\sigma^2 &= \frac{1}{n}\sum_{i=1}^{n}(\ln t_i - \hat\mu)^2
 \end{aligned}
 $$
-Therefore, MLEs have closed form.
+Therefore, MLEs have a closed form.
 
 # Problem 2
 
@@ -54,6 +54,32 @@ summary(ovarianfit_weib)
 
 
 Because both tests of two distributions generate relatively high p-values, so the survival data, by ecog status, doesn't follow the exponential distribution or the Weibull distribution.
+
+
+Besides we can take $log{-logS(t)}$ and plot against log t.
+
+```{r}
+ovarian1<- ovarian |>
+  filter(ecog.ps == 1)
+ovarian2<- ovarian |>
+  filter(ecog.ps == 2)
+
+km.fit1 <- survfit(Surv(futime, fustat) ~ 1, data = ovarian1)
+km_surv1 <- data.frame(time = km.fit1$time, est = km.fit1$surv)
+
+km.fit2 <- survfit(Surv(futime, fustat) ~ 1, data = ovarian2)
+km_surv2 <- data.frame(time = km.fit2$time, est = km.fit2$surv)
+
+ggplot(km_surv1, aes(x = log (time), y = log(-log(est))))+
+    geom_step() +
+  labs(title = "LLg plot when ecog.ps = 1 ")
+ggplot(km_surv2, aes(x = log(time), y = log(-log(est))))+
+    geom_step()  +
+  labs(title = "LLg plot when ecog.ps = 2 ")
+```
+
+
+Because the slop of a straight line is not 1, it may by considered as a Weibull distribution. But the size of data is limited and the plot is not so smooth, with the p-values calculated above, we are not sure whether the survival data follows the exponential distribution or the Weibull distribution.
 
 # Problem 3
 
@@ -81,8 +107,8 @@ leuk.aft <- survreg(Surv(time, event == 1) ~ trt, leu_dat,
                       dist = "loglogistic")
 summary(leuk.aft)
 ```
-From the AFT model summary, we can see that the coefficient corresponds to the treatment effect is 
-significant, which means that the treatment 6-MP has a significant effect on the survival of patients with Acute Myelogenous Leukemia.
+
+From the AFT model summary, we can see that the coefficient corresponds to the treatment effect is significant, which means that the treatment 6-MP has a significant effect on the survival of patients with Acute Myelogenous Leukemia.
 
 The corresponding model is:
 $$
